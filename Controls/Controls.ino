@@ -14,7 +14,7 @@
 #define BUTTON_BPM 9
 #define BUTTON_EXTTEMP 10
 MAX30105 particleSensor;
-//#define BUTTON_OK 37
+//#define BUTTON_OK 37 hello
 LCD_I2C lcd(0x27, 20, 4); // Default address of most PCF8574 modules, change according
                            // 1.54" 200x200 Tricolor EPD with SSD1681 chipset
                            // ThinkInk_154_Tricolor_Z90 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
