@@ -160,12 +160,19 @@ void incrementScreen() {
 //Updates the BPM screen
 void updateBPMScreen() {
   lcd.clear();
+  lcd.setCursor(1, 0); // adjust position
   lcd.print("BPM:");
-  lcd.setCursor(0, 1); // adjust position
+  if (BPM < AVGBPM[0]) {
+    lcd.setCursor(0, 1); // adjust position
+    lcd.print("*MinBound:");} 
+  lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
   lcd.print(AVGBPM[0]);
-  lcd.setCursor(0, 2);
+  lcd.setCursor(1, 2);
   lcd.print("MaxBound:");
+  if (BPM > AVGBPM[1]) {
+    lcd.setCursor(0, 2); // adjust position
+    lcd.print("*MaxBound:");} 
   lcd.print(AVGBPM[1]);
   lcd.display();
   deactivateWarning();
@@ -176,12 +183,19 @@ void updateBPMScreen() {
 }
 void updateEXTTempScreen() {
   lcd.clear();
+   lcd.setCursor(1, 0); // adjust position
   lcd.print("Ext Temp:");
-  lcd.setCursor(0, 1); // adjust position
+    if (ExternalBodyTemp < EXT[0]) {
+    lcd.setCursor(0, 1); // adjust position
+    lcd.print("*MinBound:");} 
+  lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
   lcd.print(EXT[0]);
-  lcd.setCursor(0, 2);
+  lcd.setCursor(1, 2);
   lcd.print("MaxBound:");
+  if (ExternalBodyTemp > EXT[1]) {
+    lcd.setCursor(0, 2); // adjust position
+    lcd.print("*MaxBound:");} 
   lcd.print(EXT[1]);
   lcd.display();
   deactivateWarning();
@@ -193,20 +207,33 @@ void updateEXTTempScreen() {
 //Updates the homescreen with latest data plus displaying it
 void updateHomeScreen(int t, int h) {
 lcd.clear();
+lcd.setCursor(1, 0); // adjust position
   lcd.print("Temp:");
-  lcd.setCursor(0, 1); // adjust position
+   if (t < T[0] || t > T[1]) {
+    lcd.setCursor(0, 0); // adjust position
+    lcd.print("*Temp:");} 
+  lcd.setCursor(1, 1); // adjust position
   lcd.print(t);
-  lcd.setCursor(0, 2);
+  lcd.setCursor(1, 2); // adjust position
   lcd.print("Humid%");
-  lcd.setCursor(0, 3); // adjust position
+   if (h < H[0] || h > H[1]) {
+    lcd.setCursor(0, 2); // adjust position
+    lcd.print("*Humid%");} 
+  lcd.setCursor(1, 3); // adjust position
   lcd.print(h);
   lcd.setCursor(9,0);
   lcd.print("INF BPM:");
-  lcd.setCursor(9,1);
+  if (BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
+    lcd.setCursor(9, 0); // adjust position
+    lcd.print("*INF BPM:");} 
+  lcd.setCursor(10,1);
   lcd.print(BPM);
-  lcd.setCursor(9,2);
+  lcd.setCursor(10,2);
   lcd.print("INF TEMP:");
-  lcd.setCursor(9,3);
+  if (ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
+    lcd.setCursor(9, 2); // adjust position
+    lcd.print("*INF TEMP");} 
+  lcd.setCursor(10,3);
   lcd.print(ExternalBodyTemp);
   lcd.display();
 }
@@ -215,11 +242,17 @@ void updateTempScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
   lcd.print("Temp:");
-  lcd.setCursor(0, 1); // adjust position
+  lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
+    if (t < T[0]) {
+    lcd.setCursor(0, 1); // adjust position
+    lcd.print("*MinBound:");} 
   lcd.print(T[0]);
-  lcd.setCursor(0, 2);
+  lcd.setCursor(1, 2);
   lcd.print("MaxBound:");
+  if (t > T[1]) {
+    lcd.setCursor(0, 2); // adjust position
+    lcd.print("*MaxBound:");} 
   lcd.print(T[1]);
   lcd.display();
   deactivateWarning();
@@ -231,12 +264,19 @@ void updateTempScreen() {
 //Updates the humidity screen plus displaying it
 void updateHumidScreen() {
   lcd.clear();
+  lcd.setCursor(1, 0); // adjust position
   lcd.print("Humid:");
-  lcd.setCursor(0, 1); // adjust position
+  lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
+      if (h < H[0]) {
+    lcd.setCursor(0, 1); // adjust position
+    lcd.print("*MinBound:");} 
   lcd.print(H[0]);
-  lcd.setCursor(0, 2);
+  lcd.setCursor(1, 2);
   lcd.print("MaxBound:");
+   if (h > H[1]) {
+    lcd.setCursor(0, 2); // adjust position
+    lcd.print("*MaxBound:");} 
   lcd.print(H[1]);
   lcd.display();
   deactivateWarning();
@@ -369,8 +409,6 @@ void loop() {
   
 // Check if the internal and external temperature and humidity are outside the allowed bounds
   if (t < T[0] || t > T[1]) {
-    lcd.setCursor(0, 0); // adjust position
-    lcd.print("*Temp:");
     activateWarning();
   } 
   else if(h < H[0] || h > H[1]) {
