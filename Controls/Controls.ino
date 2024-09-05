@@ -120,6 +120,7 @@ void setup() {
   pinMode(EncoderPinA, INPUT);
   pinMode(EncoderPinB, INPUT);
   pinMode(BUTTON_OK, INPUT);
+  pinMode(24, OUTPUT);
   digitalWrite(6, HIGH);
   // pinMode(6, OUTPUT);
   // digitalWrite(6, LOW);
@@ -364,6 +365,7 @@ void loop() {
   } else {
     Serial.println("Failed to read humidity");
   }
+
   // delay(1000);
   // Toggle heater enabled state every 30 seconds
   // An ~3.0 degC temperature increase can be noted when heater is enabled
@@ -418,17 +420,28 @@ void loop() {
 // Check if the internal and external temperature and humidity are outside the allowed bounds
   if (t < T[0] || t > T[1]) {
     activateWarning();
-  } 
-  else if(h < H[0] || h > H[1]) {
-    activateWarning();
+    if (t>T[1]){
+      digitalWrite(24, HIGH);
+    }
+    else{
+      digitalWrite(24,LOW);
+    }
   }
-  else if(ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
+  else{
+    digitalWrite(24,LOW);
+    if(h < H[0] || h > H[1]) {
     activateWarning();
+    }
+    else if(ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
+      activateWarning();
+    }
+    else if(BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
+      activateWarning();
+    } 
+    else {
+      deactivateWarning();
   }
-  else if(BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
-    activateWarning();
-  } 
-  else {
-    deactivateWarning();
+
   }
+  
 }
