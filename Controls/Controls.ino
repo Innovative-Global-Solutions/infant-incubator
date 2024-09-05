@@ -162,6 +162,8 @@ void updateBPMScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
   lcd.print("BPM:");
+    lcd.setCursor(10,0);
+  lcd.print(BPM);
   if (BPM < AVGBPM[0]) {
     lcd.setCursor(0, 1); // adjust position
     lcd.print("*MinBound:");} 
@@ -185,6 +187,8 @@ void updateEXTTempScreen() {
   lcd.clear();
    lcd.setCursor(1, 0); // adjust position
   lcd.print("Ext Temp:");
+   lcd.setCursor(10,0);
+  lcd.print(ExternalBodyTemp);
     if (ExternalBodyTemp < EXT[0]) {
     lcd.setCursor(0, 1); // adjust position
     lcd.print("*MinBound:");} 
@@ -242,6 +246,8 @@ void updateTempScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
   lcd.print("Temp:");
+   lcd.setCursor(10,0);
+  lcd.print(t);
   lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
     if (t < T[0]) {
@@ -266,6 +272,8 @@ void updateHumidScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
   lcd.print("Humid:");
+   lcd.setCursor(7,0);
+  lcd.print(h);
   lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
       if (h < H[0]) {
