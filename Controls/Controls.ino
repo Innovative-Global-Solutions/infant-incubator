@@ -70,7 +70,7 @@ void doEncoder() {
     } else if (state == prevEncoderState[prevstate]) {
       EncoderPos = -1;
     }
-    Serial.println(EncoderPos, DEC);
+    //Serial.println(EncoderPos, DEC);
     prevstate = state;
   }
   if (millis() - lastIncrement > 500) {
@@ -102,10 +102,10 @@ void doEncoder() {
   }
 }
 void setup() {
-  Serial.begin(9600);
+  // Serial.begin(9600);
   if (particleSensor.begin(Wire, I2C_SPEED_FAST) == false) //Use default I2C port, 400kHz speed
   {
-    Serial.println("MAX30105 was not found.");
+    // Serial.println("MAX30105 was not found.");
     while (1);
   }
   particleSensor.setup();                    //Configure sensor with default settings
@@ -129,25 +129,25 @@ void setup() {
   attachInterrupt(0, doEncoder, CHANGE);
   attachInterrupt(1, doEncoder, CHANGE);
   attachInterrupt(BUTTON_OK, incrementScreen, FALLING);
-  while (!Serial) { // helps establish that sensor and display are working this information will show in the serial monitor
-    delay(10);
-    Serial.print("No FOOL");
-  }
+  // while (!Serial) { // helps establish that sensor and display are working this information will show in the serial monitor
+  //   delay(10);
+    // Serial.print("No FOOL");
+  // }
   // Serial.println("Adafruit EPD full update test in red/black/white");
   // display.begin(THINKINK_TRICOLOR); //setup display?
   lcd.begin();
   lcd.display();
   lcd.backlight();
-  Serial.println("SHT31 test");
+  // Serial.println("SHT31 test");
   if (!sht31.begin(0x44)) { // Set to 0x45 for alternate i2c addr
-    Serial.println("Couldn't find SHT31");
+    // Serial.println("Couldn't find SHT31");
     while (1) delay(1);
   }
-  Serial.print("Heater Enabled State: ");
-  if (sht31.isHeaterEnabled())
-    Serial.println("ENABLED");
-  else
-    Serial.println("DISABLED");
+  // Serial.print("Heater Enabled State: ");
+  // if (sht31.isHeaterEnabled())
+    // Serial.println("ENABLED");
+  // else
+    // Serial.println("DISABLED");
   pinMode(buzzer, OUTPUT);
   pinMode(22, OUTPUT);
   pinMode(23, OUTPUT);
@@ -179,10 +179,10 @@ void updateBPMScreen() {
   lcd.print(AVGBPM[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("BPM Bounds: ");
-  Serial.print(AVGBPM[0]);
-  Serial.print(" - ");
-  Serial.println(AVGBPM[1]);
+  // Serial.print("BPM Bounds: ");
+  // Serial.print(AVGBPM[0]);
+  // Serial.print(" - ");
+  // Serial.println(AVGBPM[1]);
 }
 void updateEXTTempScreen() {
   lcd.clear();
@@ -204,10 +204,10 @@ void updateEXTTempScreen() {
   lcd.print(EXT[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("Ext Temp Bounds: ");
-  Serial.print(EXT[0]);
-  Serial.print(" - ");
-  Serial.println(EXT[1]);
+  // Serial.print("Ext Temp Bounds: ");
+  // Serial.print(EXT[0]);
+  // Serial.print(" - ");
+  // Serial.println(EXT[1]);
 }
 //Updates the homescreen with latest data plus displaying it
 void updateHomeScreen(int t, int h) {
@@ -263,10 +263,10 @@ void updateTempScreen() {
   lcd.print(T[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("Temperature Bounds: ");
-  Serial.print(T[0]);
-  Serial.print(" - ");
-  Serial.println(T[1]);
+  // Serial.print("Temperature Bounds: ");
+  // Serial.print(T[0]);
+  // Serial.print(" - ");
+  // Serial.println(T[1]);
 }
 //Updates the humidity screen plus displaying it
 void updateHumidScreen() {
@@ -289,10 +289,10 @@ void updateHumidScreen() {
   lcd.print(H[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("Humidity Bounds: ");
-  Serial.print(H[0]);
-  Serial.print(" - ");
-  Serial.println(H[1]);
+  // Serial.print("Humidity Bounds: ");
+  // Serial.print(H[0]);
+  // Serial.print(" - ");
+  // Serial.println(H[1]);
 }
 //Warning triggers lights and
 void activateWarning() {
@@ -332,15 +332,15 @@ void loop() {
   }
   ExternalBodyTemp = particleSensor.readTemperature(); // get body temp in C
   // Print results to terminal
-  Serial.print("ExternalBodyTemp [C] = ");
-  Serial.print(ExternalBodyTemp, 4);
-  Serial.print(", BPM=");
-  Serial.print(BPM);
-  Serial.print(", Avg BPM=");
-  Serial.print(avgBPM);
+  // Serial.print("ExternalBodyTemp [C] = ");
+  // Serial.print(ExternalBodyTemp, 4);
+  // Serial.print(", BPM=");
+  // Serial.print(BPM);
+  // Serial.print(", Avg BPM=");
+  // Serial.print(avgBPM);
   if (irValue < 50000)
   {
-    Serial.print(" No finger?"); // most likely no finger on sensor
+    // Serial.print(" No finger?"); // most likely no finger on sensor
   }
   //This reads data from the sensor
   t = sht31.readTemperature();
@@ -353,17 +353,17 @@ void loop() {
   EXTSwitchState = digitalRead(BUTTON_EXTTEMP);
   //Helps show on serial monitor that sensor is working properly
   if (!isnan(t)) { // check if 'is not a number'
-    Serial.print("Temp *C = ");
-    Serial.print(t);
-    Serial.print("\t\t");
+    // Serial.print("Temp *C = ");
+    // Serial.print(t);
+    // Serial.print("\t\t");
   } else {
     Serial.println("Failed to read temperature");
   }
   if (!isnan(h)) { // check if 'is not a number'
-    Serial.print("Hum. % = ");
-    Serial.println(h);
+   // Serial.print("Hum. % = ");
+   // Serial.println(h);
   } else {
-    Serial.println("Failed to read humidity");
+    //Serial.println("Failed to read humidity");
   }
 
   // delay(1000);
@@ -372,11 +372,11 @@ void loop() {
   if (loopCnt >= 30) {
     enableHeater = !enableHeater;
     sht31.heater(enableHeater);
-    Serial.print("Heater Enabled State: ");
-    if (sht31.isHeaterEnabled())
-      Serial.println("ENABLED");
-    else
-      Serial.println("DISABLED");
+   // Serial.print("Heater Enabled State: ");
+    // if (sht31.isHeaterEnabled())
+      //Serial.println("ENABLED");
+    // else
+      //Serial.println("DISABLED");
     loopCnt = 0;
   }
   loopCnt++;
@@ -406,7 +406,7 @@ void loop() {
   }
   if (screen == HOME_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateHomeScreen(t, h);
-    Serial.print("Hello");
+    //Serial.print("Hello");
   } else if (screen == TEMPERATURE_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateTempScreen();
   } else if (screen == HUMIDITY_SCREEN && ((millis() / 100) % 10 == 0)) {
