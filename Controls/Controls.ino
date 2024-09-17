@@ -5,6 +5,7 @@
 #include "MAX30105.h"
 #include "heartRate.h"
 #include <stdint.h>
+#define HEAT_PIN 15
 #define BUTTON_HUMID_BUTTON 3 // Digital pin for humidity screen button
 #define HOME_SCREEN_BUTTON 4  // Digital pin for home screen
 #define BUTTON_TEMP_BUTTON 5  // Digital pin for temperature screen
@@ -121,6 +122,7 @@ void setup() {
   pinMode(EncoderPinB, INPUT);
   pinMode(BUTTON_OK, INPUT);
   pinMode(24, OUTPUT);
+  pinMode(HEAT_PIN, OUTPUT);
   digitalWrite(6, HIGH);
   // pinMode(6, OUTPUT);
   // digitalWrite(6, LOW);
@@ -425,6 +427,12 @@ void loop() {
     }
     else{
       digitalWrite(24,LOW);
+    }
+    if (t<T[0]){
+      digitalWrite(HEAT_PIN, 255); //heater
+    }
+    else{
+      digitalWrite(HEAT_PIN,0);
     }
   }
   else{
