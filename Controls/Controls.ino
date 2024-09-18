@@ -437,6 +437,7 @@ void loop() {
   }
   else{
     digitalWrite(24,LOW);
+    digitalWrite(HEAT_PIN,0);
     if(h < H[0] || h > H[1]) {
     activateWarning();
     }
