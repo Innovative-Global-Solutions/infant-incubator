@@ -420,7 +420,10 @@ void loop() {
   }
   
 // Check if the internal and external temperature and humidity are outside the allowed bounds
-  if (t < T[0] || t > T[1]) {
+  if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && ExternalBodyTemp > EXT[0] && ExternalBodyTemp < EXT[1] && BPM > AVGBPM[0] && BPM < AVGBPM[1]) {
+    deactivateWarning();
+  }
+  else{
     activateWarning();
     if (t>T[1]){
       digitalWrite(24, HIGH); //fan
@@ -434,22 +437,10 @@ void loop() {
     else{
       digitalWrite(HEAT_PIN,0);
     }
-  }
-  else{
-    digitalWrite(24,LOW);
-    if(h < H[0] || h > H[1]) {
-    activateWarning();
+    if (h<H[0])
+      digitalWrite(26,HIGH); //Humidifier
+    else{
+      digitalWrite(26,LOW);
     }
-    else if(ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
-      activateWarning();
-    }
-    else if(BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
-      activateWarning();
-    } 
-    else {
-      deactivateWarning();
   }
-
-  }
-  
 }
