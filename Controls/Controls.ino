@@ -6,9 +6,9 @@
 #include "heartRate.h"
 #include <stdint.h>
 #define HEAT_PIN 15
-#define BUTTON_HUMID_BUTTON 3 // Digital pin for humidity screen button
-#define HOME_SCREEN_BUTTON 4  // Digital pin for home screen
-#define BUTTON_TEMP_BUTTON 5  // Digital pin for temperature screen
+#define BUTTON_HUMID_BUTTON 8 // Digital pin for humidity screen button
+#define HOME_SCREEN_BUTTON 11  // Digital pin for home screen
+#define BUTTON_TEMP_BUTTON 12  // Digital pin for temperature screen
 #define BUTTON_DOWN 36        // Digital pin for the down button
 #define BUTTON_UP 33          // Digital pin for the up button
 #define BUTTON_OK 6           // Digital pin for the ok button
@@ -23,7 +23,7 @@ bool enableHeater = false;
 uint8_t loopCnt = 0;
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
 unsigned long timer = 0;
-const int buzzer = 8; //buzzer to arduino pin 9
+const int buzzer = 7; //buzzer to arduino pin 9
 const int HOME_SCREEN = 0;
 const int HUMIDITY_SCREEN = 1;
 const int TEMPERATURE_SCREEN = 2;
