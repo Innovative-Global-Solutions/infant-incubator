@@ -6,8 +6,8 @@
 #include "heartRate.h"
 #include <stdint.h>
 #define HEAT_PIN 15
-#define BUTTON_HUMID_BUTTON 8 // Digital pin for humidity screen button
-#define HOME_SCREEN_BUTTON 11  // Digital pin for home screen
+#define BUTTON_HUMID_BUTTON 11 // Digital pin for humidity screen button
+#define HOME_SCREEN_BUTTON 8  // Digital pin for home screen
 #define BUTTON_TEMP_BUTTON 12  // Digital pin for temperature screen
 #define BUTTON_DOWN 36        // Digital pin for the down button
 #define BUTTON_UP 33          // Digital pin for the up button
@@ -152,7 +152,6 @@ void setup() {
     // Serial.println("DISABLED");
   pinMode(buzzer, OUTPUT);
   pinMode(22, OUTPUT);
-  pinMode(23, OUTPUT);
 }
 void incrementScreen() {
   if (millis() - lastScreenChange > 500) {
@@ -189,9 +188,13 @@ void updateBPMScreen() {
 void updateEXTTempScreen() {
   lcd.clear();
    lcd.setCursor(1, 0); // adjust position
-  lcd.print("Ext Temp:");
+  lcd.print("INF TEMP:");
    lcd.setCursor(10,0);
   lcd.print(ExternalBodyTemp);
+   lcd.setCursor(15,0);
+    lcd.print(char(223));
+    lcd.setCursor(16,0);
+    lcd.print("C");
     if (ExternalBodyTemp < EXT[0]) {
     lcd.setCursor(0, 1); // adjust position
     lcd.print("*MinBound:");} 
@@ -215,19 +218,25 @@ void updateEXTTempScreen() {
 void updateHomeScreen(int t, int h) {
 lcd.clear();
 lcd.setCursor(1, 0); // adjust position
-  lcd.print("Temp:");
+  lcd.print("TEMP:");
    if (t < T[0] || t > T[1]) {
     lcd.setCursor(0, 0); // adjust position
-    lcd.print("*Temp:");} 
+    lcd.print("*TEMP:");} 
   lcd.setCursor(1, 1); // adjust position
   lcd.print(t);
+  lcd.setCursor(3,1);
+  lcd.print(char(223));
+  lcd.setCursor(4,1);
+  lcd.print("C");
   lcd.setCursor(1, 2); // adjust position
-  lcd.print("Humid%");
+  lcd.print("HUMID:");
    if (h < H[0] || h > H[1]) {
     lcd.setCursor(0, 2); // adjust position
-    lcd.print("*Humid%");} 
+    lcd.print("*HUMID:");} 
   lcd.setCursor(1, 3); // adjust position
   lcd.print(h);
+  lcd.setCursor(3, 3); // adjust position
+  lcd.print("%");
   lcd.setCursor(9,0);
   lcd.print("INF BPM:");
   if (BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
@@ -240,6 +249,10 @@ lcd.setCursor(1, 0); // adjust position
   if (ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
     lcd.setCursor(9, 2); // adjust position
     lcd.print("*INF TEMP");} 
+    lcd.setCursor(15, 3); // adjust position
+    lcd.print(char(223));
+    lcd.setCursor(16,3); // adjust position
+    lcd.print("C");
   lcd.setCursor(10,3);
   lcd.print(ExternalBodyTemp);
   lcd.display();
@@ -248,9 +261,13 @@ lcd.setCursor(1, 0); // adjust position
 void updateTempScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
-  lcd.print("Temp:");
+  lcd.print("TEMP:");
    lcd.setCursor(10,0);
   lcd.print(t);
+  lcd.setCursor(15,0);
+  lcd.print(char(223));
+    lcd.setCursor(16,0);
+  lcd.print("C");
   lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
     if (t < T[0]) {
@@ -274,9 +291,11 @@ void updateTempScreen() {
 void updateHumidScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
-  lcd.print("Humid:");
-   lcd.setCursor(7,0);
+  lcd.print("HUMID:");
+   lcd.setCursor(10,0);
   lcd.print(h);
+  lcd.setCursor(15, 0); // adjust position
+  lcd.print("%");
   lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
       if (h < H[0]) {
