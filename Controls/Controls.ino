@@ -5,7 +5,7 @@
 #include "MAX30105.h"
 #include "heartRate.h"
 #include <stdint.h>
-#define HEAT_PIN 15
+#define HEAT_PIN 13
 #define BUTTON_HUMID_BUTTON 11 // Digital pin for humidity screen button
 #define HOME_SCREEN_BUTTON 8  // Digital pin for home screen
 #define BUTTON_TEMP_BUTTON 12  // Digital pin for temperature screen
@@ -13,7 +13,7 @@
 #define BUTTON_UP 33          // Digital pin for the up button
 #define BUTTON_OK 6           // Digital pin for the ok button
 #define BUTTON_BPM 9
-#define BUTTON_EXTTEMP 10
+#define BUTTON_EXTTEMP 28
 MAX30105 particleSensor;
 //#define BUTTON_OK 37 hello
 LCD_I2C lcd = LCD_I2C(0x27, 20, 4); // Default address of most PCF8574 modules, change according
@@ -63,6 +63,8 @@ int screen = 0; //0 is home screen, 1 is temperature screen, 2 is humidity
 float lastScreenChange = 0;
 float lastIncrement = 0;
 float ExternalBodyTemp;     // External body temperature
+bool oob = false;
+
 void doEncoder() {
   state = (digitalRead(EncoderPinA) << 1) | digitalRead(EncoderPinB);
   if (state != prevstate) {
@@ -103,7 +105,6 @@ void doEncoder() {
   }
 }
 void setup() {
-  // Serial.begin(9600);
   if (particleSensor.begin(Wire, I2C_SPEED_FAST) == false) //Use default I2C port, 400kHz speed
   {
     // Serial.println("MAX30105 was not found.");
@@ -122,6 +123,7 @@ void setup() {
   pinMode(EncoderPinB, INPUT);
   pinMode(BUTTON_OK, INPUT);
   pinMode(HEAT_PIN, OUTPUT);
+  pinMode(26, OUTPUT); // Set pin 9 as an output
   pinMode(24, OUTPUT);
   digitalWrite(6, HIGH);
   // pinMode(6, OUTPUT);
@@ -437,13 +439,29 @@ void loop() {
   } else if (screen == BPM_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateBPMScreen();
   }
-  
+
 // Check if the internal and external temperature and humidity are outside the allowed bounds
   if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && ExternalBodyTemp > EXT[0] && ExternalBodyTemp < EXT[1] && BPM > AVGBPM[0] && BPM < AVGBPM[1]) {
     deactivateWarning();
   }
   else{
     activateWarning();
+    if (h<H[0] && oob == false){
+      digitalWrite(26,LOW); //Humidifier
+      delay(1000);
+      digitalWrite(26,HIGH);
+      delay(1000);
+      digitalWrite(26,LOW);
+      delay(1000);
+      digitalWrite(26,HIGH);
+      oob = true;
+    }
+    else if (h>H[0] && oob == true){
+      digitalWrite(26,LOW);
+      delay(1000);
+      digitalWrite(26,HIGH);
+      oob = false;
+    }
     if (t>T[1]){
       digitalWrite(24, HIGH); //fan
     }
@@ -455,11 +473,6 @@ void loop() {
     }
     else{
       digitalWrite(HEAT_PIN,0);
-    }
-    if (h<H[0])
-      digitalWrite(26,HIGH); //Humidifier
-    else{
-      digitalWrite(26,LOW);
     }
   }
 }
