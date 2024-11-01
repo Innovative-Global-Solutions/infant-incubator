@@ -1,0 +1,35 @@
+# Ignore VS Code settings and folders
+.vscode/
+*.code-workspace
+
+# Ignore Arduino build folders
+build/
+*.ino.*.bin
+*.ino.*.elf
+*.ino.*.hex
+*.ino.*.eep
+*.ino.*.map
+*.ino.*.d
+*.ino.*.list
+
+# Ignore Arduino library files
+libraries/
+
+# Ignore temporary files
+*.tmp
+*.log
+
+# Ignore compiled object files
+*.o
+*.obj
+
+# Ignore backup files
+*.bak
+*.swp
+*~
+
+# Ignore macOS files
+.DS_Store
+
+# Ignore Windows files
+Thumbs.db
