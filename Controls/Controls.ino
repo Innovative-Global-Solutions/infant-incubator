@@ -139,7 +139,7 @@ void setup() {
   // }
   // Serial.println("Adafruit EPD full update test in red/black/white");
   // display.begin(THINKINK_TRICOLOR); //setup display?
-  lcd.begin();
+  lcd.begin(&Wire);
   lcd.display();
   lcd.backlight();
   // Serial.println("SHT31 test");
