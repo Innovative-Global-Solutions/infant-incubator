@@ -8,6 +8,7 @@
 #define HEAT_PIN 13
 #define BUTTON_HUMID_BUTTON 11 // Digital pin for humidity screen button
 #define HOME_SCREEN_BUTTON 8  // Digital pin for home screen
+
 #define BUTTON_TEMP_BUTTON 12  // Digital pin for temperature screen
 #define BUTTON_DOWN 36        // Digital pin for the down button
 #define BUTTON_UP 33          // Digital pin for the up button
@@ -125,6 +126,7 @@ void setup() {
   pinMode(HEAT_PIN, OUTPUT);
   pinMode(26, OUTPUT); // Set pin 9 as an output
   pinMode(24, OUTPUT);
+  pinMode(HEAT_PIN, OUTPUT);
   digitalWrite(6, HIGH);
   // pinMode(6, OUTPUT);
   // digitalWrite(6, LOW);
@@ -139,7 +141,7 @@ void setup() {
   // }
   // Serial.println("Adafruit EPD full update test in red/black/white");
   // display.begin(THINKINK_TRICOLOR); //setup display?
-  lcd.begin();
+  lcd.begin(&Wire);
   lcd.display();
   lcd.backlight();
   // Serial.println("SHT31 test");
