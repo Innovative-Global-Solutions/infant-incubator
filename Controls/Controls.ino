@@ -5,15 +5,16 @@
 #include "MAX30105.h"
 #include "heartRate.h"
 #include <stdint.h>
-#define HEAT_PIN 15
-#define BUTTON_HUMID_BUTTON 8 // Digital pin for humidity screen button
-#define HOME_SCREEN_BUTTON 11  // Digital pin for home screen
+#define HEAT_PIN 13
+#define BUTTON_HUMID_BUTTON 11 // Digital pin for humidity screen button
+#define HOME_SCREEN_BUTTON 8  // Digital pin for home screen
+
 #define BUTTON_TEMP_BUTTON 12  // Digital pin for temperature screen
 #define BUTTON_DOWN 36        // Digital pin for the down button
 #define BUTTON_UP 33          // Digital pin for the up button
 #define BUTTON_OK 6           // Digital pin for the ok button
 #define BUTTON_BPM 9
-#define BUTTON_EXTTEMP 10
+#define BUTTON_EXTTEMP 28
 MAX30105 particleSensor;
 //#define BUTTON_OK 37 hello
 LCD_I2C lcd = LCD_I2C(0x27, 20, 4); // Default address of most PCF8574 modules, change according
@@ -63,6 +64,8 @@ int screen = 0; //0 is home screen, 1 is temperature screen, 2 is humidity
 float lastScreenChange = 0;
 float lastIncrement = 0;
 float ExternalBodyTemp;     // External body temperature
+bool oob = false;
+
 void doEncoder() {
   state = (digitalRead(EncoderPinA) << 1) | digitalRead(EncoderPinB);
   if (state != prevstate) {
@@ -71,7 +74,7 @@ void doEncoder() {
     } else if (state == prevEncoderState[prevstate]) {
       EncoderPos = -1;
     }
-    Serial.println(EncoderPos, DEC);
+    //Serial.println(EncoderPos, DEC);
     prevstate = state;
   }
   if (millis() - lastIncrement > 500) {
@@ -103,10 +106,9 @@ void doEncoder() {
   }
 }
 void setup() {
-  Serial.begin(9600);
   if (particleSensor.begin(Wire, I2C_SPEED_FAST) == false) //Use default I2C port, 400kHz speed
   {
-    Serial.println("MAX30105 was not found.");
+    // Serial.println("MAX30105 was not found.");
     while (1);
   }
   particleSensor.setup();                    //Configure sensor with default settings
@@ -121,6 +123,8 @@ void setup() {
   pinMode(EncoderPinA, INPUT);
   pinMode(EncoderPinB, INPUT);
   pinMode(BUTTON_OK, INPUT);
+  pinMode(HEAT_PIN, OUTPUT);
+  pinMode(26, OUTPUT); // Set pin 9 as an output
   pinMode(24, OUTPUT);
   pinMode(HEAT_PIN, OUTPUT);
   digitalWrite(6, HIGH);
@@ -131,28 +135,27 @@ void setup() {
   attachInterrupt(0, doEncoder, CHANGE);
   attachInterrupt(1, doEncoder, CHANGE);
   attachInterrupt(BUTTON_OK, incrementScreen, FALLING);
-  while (!Serial) { // helps establish that sensor and display are working this information will show in the serial monitor
-    delay(10);
-    Serial.print("No FOOL");
-  }
+  // while (!Serial) { // helps establish that sensor and display are working this information will show in the serial monitor
+  //   delay(10);
+    // Serial.print("No FOOL");
+  // }
   // Serial.println("Adafruit EPD full update test in red/black/white");
   // display.begin(THINKINK_TRICOLOR); //setup display?
   lcd.begin(&Wire);
   lcd.display();
   lcd.backlight();
-  Serial.println("SHT31 test");
+  // Serial.println("SHT31 test");
   if (!sht31.begin(0x44)) { // Set to 0x45 for alternate i2c addr
-    Serial.println("Couldn't find SHT31");
+    // Serial.println("Couldn't find SHT31");
     while (1) delay(1);
   }
-  Serial.print("Heater Enabled State: ");
-  if (sht31.isHeaterEnabled())
-    Serial.println("ENABLED");
-  else
-    Serial.println("DISABLED");
+  // Serial.print("Heater Enabled State: ");
+  // if (sht31.isHeaterEnabled())
+    // Serial.println("ENABLED");
+  // else
+    // Serial.println("DISABLED");
   pinMode(buzzer, OUTPUT);
   pinMode(22, OUTPUT);
-  pinMode(23, OUTPUT);
 }
 void incrementScreen() {
   if (millis() - lastScreenChange > 500) {
@@ -181,17 +184,21 @@ void updateBPMScreen() {
   lcd.print(AVGBPM[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("BPM Bounds: ");
-  Serial.print(AVGBPM[0]);
-  Serial.print(" - ");
-  Serial.println(AVGBPM[1]);
+  // Serial.print("BPM Bounds: ");
+  // Serial.print(AVGBPM[0]);
+  // Serial.print(" - ");
+  // Serial.println(AVGBPM[1]);
 }
 void updateEXTTempScreen() {
   lcd.clear();
    lcd.setCursor(1, 0); // adjust position
-  lcd.print("Ext Temp:");
+  lcd.print("INF TEMP:");
    lcd.setCursor(10,0);
   lcd.print(ExternalBodyTemp);
+   lcd.setCursor(15,0);
+    lcd.print(char(223));
+    lcd.setCursor(16,0);
+    lcd.print("C");
     if (ExternalBodyTemp < EXT[0]) {
     lcd.setCursor(0, 1); // adjust position
     lcd.print("*MinBound:");} 
@@ -206,28 +213,34 @@ void updateEXTTempScreen() {
   lcd.print(EXT[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("Ext Temp Bounds: ");
-  Serial.print(EXT[0]);
-  Serial.print(" - ");
-  Serial.println(EXT[1]);
+  // Serial.print("Ext Temp Bounds: ");
+  // Serial.print(EXT[0]);
+  // Serial.print(" - ");
+  // Serial.println(EXT[1]);
 }
 //Updates the homescreen with latest data plus displaying it
 void updateHomeScreen(int t, int h) {
 lcd.clear();
 lcd.setCursor(1, 0); // adjust position
-  lcd.print("Temp:");
+  lcd.print("TEMP:");
    if (t < T[0] || t > T[1]) {
     lcd.setCursor(0, 0); // adjust position
-    lcd.print("*Temp:");} 
+    lcd.print("*TEMP:");} 
   lcd.setCursor(1, 1); // adjust position
   lcd.print(t);
+  lcd.setCursor(3,1);
+  lcd.print(char(223));
+  lcd.setCursor(4,1);
+  lcd.print("C");
   lcd.setCursor(1, 2); // adjust position
-  lcd.print("Humid%");
+  lcd.print("HUMID:");
    if (h < H[0] || h > H[1]) {
     lcd.setCursor(0, 2); // adjust position
-    lcd.print("*Humid%");} 
+    lcd.print("*HUMID:");} 
   lcd.setCursor(1, 3); // adjust position
   lcd.print(h);
+  lcd.setCursor(3, 3); // adjust position
+  lcd.print("%");
   lcd.setCursor(9,0);
   lcd.print("INF BPM:");
   if (BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
@@ -240,6 +253,10 @@ lcd.setCursor(1, 0); // adjust position
   if (ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
     lcd.setCursor(9, 2); // adjust position
     lcd.print("*INF TEMP");} 
+    lcd.setCursor(15, 3); // adjust position
+    lcd.print(char(223));
+    lcd.setCursor(16,3); // adjust position
+    lcd.print("C");
   lcd.setCursor(10,3);
   lcd.print(ExternalBodyTemp);
   lcd.display();
@@ -248,9 +265,13 @@ lcd.setCursor(1, 0); // adjust position
 void updateTempScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
-  lcd.print("Temp:");
+  lcd.print("TEMP:");
    lcd.setCursor(10,0);
   lcd.print(t);
+  lcd.setCursor(15,0);
+  lcd.print(char(223));
+    lcd.setCursor(16,0);
+  lcd.print("C");
   lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
     if (t < T[0]) {
@@ -265,18 +286,20 @@ void updateTempScreen() {
   lcd.print(T[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("Temperature Bounds: ");
-  Serial.print(T[0]);
-  Serial.print(" - ");
-  Serial.println(T[1]);
+  // Serial.print("Temperature Bounds: ");
+  // Serial.print(T[0]);
+  // Serial.print(" - ");
+  // Serial.println(T[1]);
 }
 //Updates the humidity screen plus displaying it
 void updateHumidScreen() {
   lcd.clear();
   lcd.setCursor(1, 0); // adjust position
-  lcd.print("Humid:");
-   lcd.setCursor(7,0);
+  lcd.print("HUMID:");
+   lcd.setCursor(10,0);
   lcd.print(h);
+  lcd.setCursor(15, 0); // adjust position
+  lcd.print("%");
   lcd.setCursor(1, 1); // adjust position
   lcd.print("MinBound:");
       if (h < H[0]) {
@@ -291,10 +314,10 @@ void updateHumidScreen() {
   lcd.print(H[1]);
   lcd.display();
   deactivateWarning();
-  Serial.print("Humidity Bounds: ");
-  Serial.print(H[0]);
-  Serial.print(" - ");
-  Serial.println(H[1]);
+  // Serial.print("Humidity Bounds: ");
+  // Serial.print(H[0]);
+  // Serial.print(" - ");
+  // Serial.println(H[1]);
 }
 //Warning triggers lights and
 void activateWarning() {
@@ -334,15 +357,15 @@ void loop() {
   }
   ExternalBodyTemp = particleSensor.readTemperature(); // get body temp in C
   // Print results to terminal
-  Serial.print("ExternalBodyTemp [C] = ");
-  Serial.print(ExternalBodyTemp, 4);
-  Serial.print(", BPM=");
-  Serial.print(BPM);
-  Serial.print(", Avg BPM=");
-  Serial.print(avgBPM);
+  // Serial.print("ExternalBodyTemp [C] = ");
+  // Serial.print(ExternalBodyTemp, 4);
+  // Serial.print(", BPM=");
+  // Serial.print(BPM);
+  // Serial.print(", Avg BPM=");
+  // Serial.print(avgBPM);
   if (irValue < 50000)
   {
-    Serial.print(" No finger?"); // most likely no finger on sensor
+    // Serial.print(" No finger?"); // most likely no finger on sensor
   }
   //This reads data from the sensor
   t = sht31.readTemperature();
@@ -355,17 +378,17 @@ void loop() {
   EXTSwitchState = digitalRead(BUTTON_EXTTEMP);
   //Helps show on serial monitor that sensor is working properly
   if (!isnan(t)) { // check if 'is not a number'
-    Serial.print("Temp *C = ");
-    Serial.print(t);
-    Serial.print("\t\t");
+    // Serial.print("Temp *C = ");
+    // Serial.print(t);
+    // Serial.print("\t\t");
   } else {
     Serial.println("Failed to read temperature");
   }
   if (!isnan(h)) { // check if 'is not a number'
-    Serial.print("Hum. % = ");
-    Serial.println(h);
+   // Serial.print("Hum. % = ");
+   // Serial.println(h);
   } else {
-    Serial.println("Failed to read humidity");
+    //Serial.println("Failed to read humidity");
   }
 
   // delay(1000);
@@ -374,11 +397,11 @@ void loop() {
   if (loopCnt >= 30) {
     enableHeater = !enableHeater;
     sht31.heater(enableHeater);
-    Serial.print("Heater Enabled State: ");
-    if (sht31.isHeaterEnabled())
-      Serial.println("ENABLED");
-    else
-      Serial.println("DISABLED");
+   // Serial.print("Heater Enabled State: ");
+    // if (sht31.isHeaterEnabled())
+      //Serial.println("ENABLED");
+    // else
+      //Serial.println("DISABLED");
     loopCnt = 0;
   }
   loopCnt++;
@@ -408,7 +431,7 @@ void loop() {
   }
   if (screen == HOME_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateHomeScreen(t, h);
-    Serial.print("Hello");
+    //Serial.print("Hello");
   } else if (screen == TEMPERATURE_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateTempScreen();
   } else if (screen == HUMIDITY_SCREEN && ((millis() / 100) % 10 == 0)) {
@@ -418,10 +441,29 @@ void loop() {
   } else if (screen == BPM_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateBPMScreen();
   }
-  
+
 // Check if the internal and external temperature and humidity are outside the allowed bounds
-  if (t < T[0] || t > T[1]) {
+  if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && ExternalBodyTemp > EXT[0] && ExternalBodyTemp < EXT[1] && BPM > AVGBPM[0] && BPM < AVGBPM[1]) {
+    deactivateWarning();
+  }
+  else{
     activateWarning();
+    if (h<H[0] && oob == false){
+      digitalWrite(26,LOW); //Humidifier
+      delay(1000);
+      digitalWrite(26,HIGH);
+      delay(1000);
+      digitalWrite(26,LOW);
+      delay(1000);
+      digitalWrite(26,HIGH);
+      oob = true;
+    }
+    else if (h>H[0] && oob == true){
+      digitalWrite(26,LOW);
+      delay(1000);
+      digitalWrite(26,HIGH);
+      oob = false;
+    }
     if (t>T[1]){
       digitalWrite(24, HIGH); //fan
     }
@@ -435,21 +477,4 @@ void loop() {
       digitalWrite(HEAT_PIN,0);
     }
   }
-  else{
-    digitalWrite(24,LOW);
-    if(h < H[0] || h > H[1]) {
-    activateWarning();
-    }
-    else if(ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
-      activateWarning();
-    }
-    else if(BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
-      activateWarning();
-    } 
-    else {
-      deactivateWarning();
-  }
-
-  }
-  
 }
