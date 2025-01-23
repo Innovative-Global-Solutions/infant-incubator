@@ -21,7 +21,7 @@ LCD_I2C lcd = LCD_I2C(0x27, 20, 4); // Default address of most PCF8574 modules, 
                            // 1.54" 200x200 Tricolor EPD with SSD1681 chipset
                            // ThinkInk_154_Tricolor_Z90 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
 
-const uint8_t RATE_SIZE = 4;     // Number of HR samples to average
+const uint8_t RATE_SIZE = 20;     // Number of HR samples to average
 uint8_t rates[RATE_SIZE];         // Array of heart rates
 uint8_t rateSpot = 0;             // Array position tracker
 long lastBeat = 0;                // Time of the last beat
@@ -266,7 +266,7 @@ lcd.setCursor(1, 0); // adjust position
   lcd.print(h);
   lcd.setCursor(3, 3); // adjust position
   lcd.print("%");
-  lcd.setCursor(9,0);
+  lcd.setCursor(10,0);
   lcd.print("INF BPM:");
   if (avgBPM < AVGBPM[0] || avgBPM > AVGBPM[1]) {
     lcd.setCursor(9, 0); // adjust position
@@ -509,16 +509,16 @@ void loop() {
     ok = 1;
     updateBPMScreen();
   }
-  if (screen == HOME_SCREEN && ((millis() / 100) % 10 == 0)) {
+  if (screen == HOME_SCREEN && ((millis() / 500) % 10 == 0)) {
     updateHomeScreen(t, h);
     //Serial.print("Hello");
-  } else if (screen == TEMPERATURE_SCREEN && ((millis() / 100) % 10 == 0)) {
+  } else if (screen == TEMPERATURE_SCREEN && ((millis() / 500) % 10 == 0)) {
     updateTempScreen();
-  } else if (screen == HUMIDITY_SCREEN && ((millis() / 100) % 10 == 0)) {
+  } else if (screen == HUMIDITY_SCREEN && ((millis() / 500) % 10 == 0)) {
     updateHumidScreen();
-  } else if (screen == EXTTEMP_SCREEN && ((millis() / 100) % 10 == 0)) {
+  } else if (screen == EXTTEMP_SCREEN && ((millis() / 500) % 10 == 0)) {
     updateEXTTempScreen();
-  } else if (screen == BPM_SCREEN && ((millis() / 100) % 10 == 0)) {
+  } else if (screen == BPM_SCREEN && ((millis() / 500) % 10 == 0)) {
     updateBPMScreen();
   }
 
