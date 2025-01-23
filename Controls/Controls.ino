@@ -20,6 +20,31 @@ MAX30105 particleSensor;
 LCD_I2C lcd = LCD_I2C(0x27, 20, 4); // Default address of most PCF8574 modules, change according
                            // 1.54" 200x200 Tricolor EPD with SSD1681 chipset
                            // ThinkInk_154_Tricolor_Z90 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
+
+const uint8_t RATE_SIZE = 4;     // Number of HR samples to average
+uint8_t rates[RATE_SIZE];         // Array of heart rates
+uint8_t rateSpot = 0;             // Array position tracker
+long lastBeat = 0;                // Time of the last beat
+float BPM;                        // HR in beats per minute
+float avgBPM;                     // Average BPM
+long irValue;                     // Sensor's infrared value
+float ExternalBodyTemp;           // External body temperature
+// Pulse sensor dynamic qualities
+const int PulseSensorPurplePin = 0; // Analog pin for pulse sensor (if used in parallel)
+int LED = LED_BUILTIN;             // Onboard Arduino LED
+int Signal;                        // Raw signal data
+int ogAvg = 515;
+int threshholdAvg = ogAvg;         // Starting threshold average
+int dataPts = 10;
+int threshholdPts[10];             // Array for moving average
+bool beat = false;
+int iteratorLoc = 0;               // Moving window index
+float upperThresholdAvg = 0.0;     // Average of values above the threshold
+unsigned long peakTimes[8];        // Peak timestamps for BPM calculation
+int peakIndex = 0;                 // Peak array index
+int peakWindowSize = 8;            // Window size for peak timestamps
+float bpm = 0.0;                   // Calculated BPM
+
 bool enableHeater = false;
 uint8_t loopCnt = 0;
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
@@ -45,14 +70,6 @@ int prevEncoderState[4] = { 1, 3, 0, 2 };
 int EncoderPinA = 0;
 int EncoderPinB = 1;
 int EncoderPos = 0;
-const uint8_t RATE_SIZE = 20; // # of HR samples to average
-uint8_t rates[RATE_SIZE];   // Array of heart rates
-uint8_t rateSpot = 0;       // array position tracker for
-long lastBeat = 0;          // Time at which last beat occured
-long irValue;               // The sensor's infared value
-long deltaHeartBeat;        // Time between heart bears
-float BPM;                  // HR in beats per minute
-int32_t avgBPM;
 float t;                     //The read temperature
 float h;                     //The read humidity
 float T[2] = { 20.0, 30.0 }; //initial temp bounds
@@ -63,7 +80,7 @@ float ok = 0;   //counter for ok button
 int screen = 0; //0 is home screen, 1 is temperature screen, 2 is humidity
 float lastScreenChange = 0;
 float lastIncrement = 0;
-float ExternalBodyTemp;     // External body temperature
+// float ExternalBodyTemp;     // External body temperature
 bool oob = false;
 
 void doEncoder() {
@@ -115,6 +132,13 @@ void setup() {
   particleSensor.setPulseAmplitudeRed(0x0A);    //Turn off Red LED
   particleSensor.setPulseAmplitudeGreen(0);  //Turn off Green LED
   particleSensor.enableDIETEMPRDY();         //Enable the temp ready interrupt
+    // Initialize threshold array for dynamic qualities
+  for (int i = 0; i < dataPts; i++) {
+    threshholdPts[i] = ogAvg;
+  }
+  // Initialize rates array to 0
+  memset(rates, 0, sizeof(rates));
+  pinMode(LED, OUTPUT);
   pinMode(BUTTON_HUMID_BUTTON, INPUT_PULLDOWN); //establishes connection of button
   pinMode(HOME_SCREEN_BUTTON, INPUT_PULLDOWN);  //establishes connection of button
   pinMode(BUTTON_TEMP_BUTTON, INPUT_PULLDOWN);  //establishes connection of button
@@ -157,6 +181,7 @@ void setup() {
   pinMode(buzzer, OUTPUT);
   pinMode(22, OUTPUT);
 }
+
 void incrementScreen() {
   if (millis() - lastScreenChange > 500) {
     ok++;
@@ -169,8 +194,8 @@ void updateBPMScreen() {
   lcd.setCursor(1, 0); // adjust position
   lcd.print("BPM:");
     lcd.setCursor(10,0);
-  lcd.print(BPM);
-  if (BPM < AVGBPM[0]) {
+  lcd.print(avgBPM);
+  if (avgBPM < AVGBPM[0]) {
     lcd.setCursor(0, 1); // adjust position
     lcd.print("*MinBound:");} 
   lcd.setCursor(1, 1); // adjust position
@@ -178,7 +203,7 @@ void updateBPMScreen() {
   lcd.print(AVGBPM[0]);
   lcd.setCursor(1, 2);
   lcd.print("MaxBound:");
-  if (BPM > AVGBPM[1]) {
+  if (avgBPM > AVGBPM[1]) {
     lcd.setCursor(0, 2); // adjust position
     lcd.print("*MaxBound:");} 
   lcd.print(AVGBPM[1]);
@@ -243,11 +268,11 @@ lcd.setCursor(1, 0); // adjust position
   lcd.print("%");
   lcd.setCursor(9,0);
   lcd.print("INF BPM:");
-  if (BPM < AVGBPM[0] || BPM > AVGBPM[1]) {
+  if (avgBPM < AVGBPM[0] || avgBPM > AVGBPM[1]) {
     lcd.setCursor(9, 0); // adjust position
     lcd.print("*INF BPM:");} 
   lcd.setCursor(10,1);
-  lcd.print(BPM);
+  lcd.print(avgBPM);
   lcd.setCursor(10,2);
   lcd.print("INF TEMP:");
   if (ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
@@ -334,28 +359,87 @@ void deactivateWarning() {
   noTone(buzzer);
 }
 void loop() {
-  // calculate HR value
+    // Read data from MAX30105
   irValue = particleSensor.getIR();
-  if (checkForBeat(irValue) == true)
-  {
-    //We sensed a beat!
-    deltaHeartBeat = millis() - lastBeat;
+  ExternalBodyTemp = particleSensor.readTemperature(); // Body temperature in Celsius
+  // Check for a beat and calculate BPM
+  if (checkForBeat(irValue) == true) {
+    long deltaHeartBeat = millis() - lastBeat;
     lastBeat = millis();
     BPM = 60 / (deltaHeartBeat / 1000.0);
-    if (BPM < 255 && BPM > 20)
-    {
-      rates[rateSpot++] = (uint8_t) BPM; //Store this reading in the array
-      rateSpot %= RATE_SIZE;            //Wrap array position tracker
-      //Take average of readings
+  }
+  // Dynamic signal threshold logic
+  Signal = irValue;  // Use IR value as the signal input for dynamic processing
+  int oldValue = threshholdPts[iteratorLoc];
+  double total = 0;
+  for (int i = 0; i < dataPts; i++) {
+    total += threshholdPts[i];
+  }
+  total = total - oldValue + Signal;
+  double newThreshholdAvg = total / dataPts;
+  threshholdPts[iteratorLoc] = Signal;
+  iteratorLoc = (iteratorLoc + 1) % dataPts;
+  threshholdAvg = newThreshholdAvg;
+  // Calculate upperThresholdAvg
+  int count = 0;
+  double sumAboveThreshold = 0.0;
+  for (int i = 0; i < dataPts; i++) {
+    if (threshholdPts[i] > threshholdAvg) {
+      sumAboveThreshold += threshholdPts[i];
+      count++;
+    }
+  }
+  upperThresholdAvg = (count > 0) ? sumAboveThreshold / count : 0.0;
+  // BPM calculation using peaks
+  if (Signal > upperThresholdAvg) {
+    if (!beat) {
+      peakTimes[peakIndex] = millis();
+      peakIndex = (peakIndex + 1) % peakWindowSize;
+      beat = true;
+      digitalWrite(LED, HIGH); // Turn on LED on beat
+    }
+  } else {
+    if (beat) {
+      digitalWrite(LED, LOW); // Turn off LED
+      beat = false;
+    }
+  }
+  if (peakIndex > 1) {
+    unsigned long totalInterval = 0;
+    int peakCount = 0;
+    for (int i = 0; i < peakWindowSize - 1; i++) {
+      int currentIndex = (peakIndex - 1 - i + peakWindowSize) % peakWindowSize;
+      int previousIndex = (peakIndex - 2 - i + peakWindowSize) % peakWindowSize;
+      totalInterval += peakTimes[currentIndex] - peakTimes[previousIndex];
+      peakCount++;
+    }
+    if (peakCount > 0) {
+      float newBPM = 60000.0 / (totalInterval / peakCount);
+      bpm = newBPM; // Update bpm no matter the value
+      // Update rates array with new bpm
+      rates[rateSpot++] = (uint8_t)bpm;
+      rateSpot %= RATE_SIZE; // Wrap around index for circular buffer
+      // Calculate average BPM from the last 10 values in rates[]
       avgBPM = 0;
-      for (uint8_t i = 0 ; i < RATE_SIZE ; i++)
-      {
+      for (uint8_t i = 0; i < RATE_SIZE; i++) {
         avgBPM += rates[i];
       }
       avgBPM /= RATE_SIZE;
     }
   }
-  ExternalBodyTemp = particleSensor.readTemperature(); // get body temp in C
+  // Print results
+  // Serial.print("Avg BPM Components: ");
+  for (uint8_t i = 0; i < RATE_SIZE; i++) {
+    // Serial.print(rates[i]);
+    // Serial.print(i < (RATE_SIZE - 1) ? ", " : "\n");
+  }
+ // Serial.print("Avg BPM: ");
+  // Serial.print(avgBPM);
+  // Serial.print(", ");
+  // Serial.println(bpm);
+  delay(10); // Small delay for smoother output
+  // calculate HR value
+ // ExternalBodyTemp = particleSensor.readTemperature(); // get body temp in C
   // Print results to terminal
   // Serial.print("ExternalBodyTemp [C] = ");
   // Serial.print(ExternalBodyTemp, 4);
@@ -363,10 +447,6 @@ void loop() {
   // Serial.print(BPM);
   // Serial.print(", Avg BPM=");
   // Serial.print(avgBPM);
-  if (irValue < 50000)
-  {
-    // Serial.print(" No finger?"); // most likely no finger on sensor
-  }
   //This reads data from the sensor
   t = sht31.readTemperature();
   h = sht31.readHumidity();
@@ -442,13 +522,18 @@ void loop() {
     updateBPMScreen();
   }
 
-// Check if the internal and external temperature and humidity are outside the allowed bounds
-  if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && ExternalBodyTemp > EXT[0] && ExternalBodyTemp < EXT[1] && BPM > AVGBPM[0] && BPM < AVGBPM[1]) {
+  // Check if the internal and external temperature and humidity are outside the allowed bounds
+
+  if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && ExternalBodyTemp > EXT[0] && ExternalBodyTemp < EXT[1] && avgBPM > AVGBPM[0] && avgBPM < AVGBPM[1])
+  {
     deactivateWarning();
   }
-  else{
+
+  else
+  {
     activateWarning();
-    if (h<H[0] && oob == false){
+    if (h<H[0] && oob == false)
+    {
       digitalWrite(26,LOW); //Humidifier
       delay(1000);
       digitalWrite(26,HIGH);
@@ -458,22 +543,27 @@ void loop() {
       digitalWrite(26,HIGH);
       oob = true;
     }
-    else if (h>H[0] && oob == true){
+    else if (h>H[0] && oob == true)
+    {
       digitalWrite(26,LOW);
       delay(1000);
       digitalWrite(26,HIGH);
       oob = false;
     }
-    if (t>T[1]){
+    if (t>T[1])
+    {
       digitalWrite(24, HIGH); //fan
     }
-    else{
+    else
+    {
       digitalWrite(24,LOW);
     }
-    if (t<T[0]){
+    if (t<T[0])
+    {
       digitalWrite(HEAT_PIN, 255); //heater
     }
-    else{
+    else
+    {
       digitalWrite(HEAT_PIN,0);
     }
   }
