@@ -207,7 +207,7 @@ void incrementScreen() {
 }
 //Updates the BPM screen
 void updateBPMScreen() {
-  lcd.clear();
+ // lcd.clear();
   lcd.setCursor(1, 0); // adjust position
   lcd.print("BPM:");
     lcd.setCursor(10,0);
@@ -521,18 +521,18 @@ void loop()
     ok = 1;
     updateBPMScreen();
   }
-  // if (screen == HOME_SCREEN && ((millis() / 500) % 10 == 0)) {
-  //   updateHomeScreen(t, h);
-  //   //Serial.print("Hello");
-  // } else if (screen == TEMPERATURE_SCREEN && ((millis() / 500) % 10 == 0)) {
-  //   updateTempScreen();
-  // } else if (screen == HUMIDITY_SCREEN && ((millis() / 500) % 10 == 0)) {
-  //   updateHumidScreen();
-  // } else if (screen == EXTTEMP_SCREEN && ((millis() / 500) % 10 == 0)) {
-  //   updateEXTTempScreen();
-  // } else if (screen == BPM_SCREEN && ((millis() / 500) % 10 == 0)) {
-  //   updateBPMScreen();
-  // }
+  if (screen == HOME_SCREEN && ((millis() / 500) % 10 == 0)) {
+    updateHomeScreen(t, h);
+    //Serial.print("Hello");
+  } else if (screen == TEMPERATURE_SCREEN && ((millis() / 500) % 10 == 0)) {
+    updateTempScreen();
+  } else if (screen == HUMIDITY_SCREEN && ((millis() / 500) % 10 == 0)) {
+    updateHumidScreen();
+  } else if (screen == EXTTEMP_SCREEN && ((millis() / 500) % 10 == 0)) {
+    updateEXTTempScreen();
+  } else if (screen == BPM_SCREEN && ((millis() / 500) % 10 == 0)) {
+    updateBPMScreen();
+  }
 
   // Check if the internal and external temperature and humidity are outside the allowed bounds
 
@@ -580,23 +580,27 @@ void loop()
   //   }
   // }
    // Get the skin temperature and calculate estimated core temperature
-    float skinTempC = sts.getTemperaturePeriodC();
-    float coreTempC = skinTempC + 2.0;
-    // Store the core temperature in the array
-    coreTempReadings[currentIndex] = coreTempC;
-    currentIndex++;
-    // Reset index and mark array as filled once we reach the end
-    if (currentIndex >= numSamples) {
-        currentIndex = 0;
-        isArrayFilled = true;
+    float skinTempC = 0;
+    if ((millis()/100)%20 == 0){
+      skinTempC = sts.getTemperaturePeriodC();
+      // delay(100);
+      float coreTempC = skinTempC + 2.0;
+      // Store the core temperature in the array
+      coreTempReadings[currentIndex] = coreTempC;
+      currentIndex++;
+      // Reset index and mark array as filled once we reach the end
+      if (currentIndex >= numSamples) {
+          currentIndex = 0;
+          isArrayFilled = true;
+      }
+      // Calculate the rolling average
+      float sum = 0.0;
+      int count1 = isArrayFilled ? numSamples : currentIndex; // Use only filled elements
+      for (int i = 0; i < count1; i++) {
+          sum += coreTempReadings[i];
+      }
+      rollingAvgTempC = sum / count1;
     }
-    // Calculate the rolling average
-    float sum = 0.0;
-    int count1 = isArrayFilled ? numSamples : currentIndex; // Use only filled elements
-    for (int i = 0; i < count1; i++) {
-        sum += coreTempReadings[i];
-    }
-    rollingAvgTempC = sum / count1;
     float rollingAvgTempF = (rollingAvgTempC * 1.8) + 32;
       // Serial.println(avgBPM);
 
