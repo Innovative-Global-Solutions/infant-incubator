@@ -5,6 +5,12 @@
 #include "MAX30105.h"
 #include "heartRate.h"
 #include <stdint.h>
+#include "DFRobot_STS3X.h"
+#define numSamples 10  // Number of samples for the rolling average
+DFRobot_STS3X sts(&Wire, STS3X_I2C_ADDRESS_B);
+float coreTempReadings[numSamples]; // Array to store the last temperature readings
+int currentIndex = 0;  // Current index for storing the reading
+bool isArrayFilled = false;  // Flag to indicate when the array is fully populated
 #define HEAT_PIN 13
 #define BUTTON_HUMID_BUTTON 11 // Digital pin for humidity screen button
 #define HOME_SCREEN_BUTTON 8  // Digital pin for home screen
@@ -21,14 +27,14 @@ LCD_I2C lcd = LCD_I2C(0x27, 20, 4); // Default address of most PCF8574 modules, 
                            // 1.54" 200x200 Tricolor EPD with SSD1681 chipset
                            // ThinkInk_154_Tricolor_Z90 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
 
-const uint8_t RATE_SIZE = 20;     // Number of HR samples to average
+const uint8_t RATE_SIZE = 4;     // Number of HR samples to average
 uint8_t rates[RATE_SIZE];         // Array of heart rates
 uint8_t rateSpot = 0;             // Array position tracker
 long lastBeat = 0;                // Time of the last beat
 float BPM;                        // HR in beats per minute
 float avgBPM;                     // Average BPM
 long irValue;                     // Sensor's infrared value
-float ExternalBodyTemp;           // External body temperature
+//float ExternalBodyTemp;           // External body temperature
 // Pulse sensor dynamic qualities
 const int PulseSensorPurplePin = 0; // Analog pin for pulse sensor (if used in parallel)
 int LED = LED_BUILTIN;             // Onboard Arduino LED
@@ -81,6 +87,7 @@ int screen = 0; //0 is home screen, 1 is temperature screen, 2 is humidity
 float lastScreenChange = 0;
 float lastIncrement = 0;
 // float ExternalBodyTemp;     // External body temperature
+float rollingAvgTempC = 0.0;
 bool oob = false;
 
 void doEncoder() {
@@ -123,6 +130,16 @@ void doEncoder() {
   }
 }
 void setup() {
+   while(sts.begin() != true){
+       // Serial.println("Failed to init chip, please check if the chip connection is fine.");
+        delay(1000);
+    }
+   // Serial.println("Begin ok!");
+    sts.setFreq(sts.e10Hz);
+    // Initialize the array with zeros
+    for (int i = 0; i < numSamples; i++) {
+        coreTempReadings[i] = 0.0;
+    }
   if (particleSensor.begin(Wire, I2C_SPEED_FAST) == false) //Use default I2C port, 400kHz speed
   {
     // Serial.println("MAX30105 was not found.");
@@ -219,12 +236,12 @@ void updateEXTTempScreen() {
    lcd.setCursor(1, 0); // adjust position
   lcd.print("INF TEMP:");
    lcd.setCursor(10,0);
-  lcd.print(ExternalBodyTemp);
+  lcd.print(rollingAvgTempC);
    lcd.setCursor(15,0);
     lcd.print(char(223));
     lcd.setCursor(16,0);
     lcd.print("C");
-    if (ExternalBodyTemp < EXT[0]) {
+    if (rollingAvgTempC < EXT[0]) {
     lcd.setCursor(0, 1); // adjust position
     lcd.print("*MinBound:");} 
   lcd.setCursor(1, 1); // adjust position
@@ -232,7 +249,7 @@ void updateEXTTempScreen() {
   lcd.print(EXT[0]);
   lcd.setCursor(1, 2);
   lcd.print("MaxBound:");
-  if (ExternalBodyTemp > EXT[1]) {
+  if (rollingAvgTempC > EXT[1]) {
     lcd.setCursor(0, 2); // adjust position
     lcd.print("*MaxBound:");} 
   lcd.print(EXT[1]);
@@ -244,7 +261,7 @@ void updateEXTTempScreen() {
   // Serial.println(EXT[1]);
 }
 //Updates the homescreen with latest data plus displaying it
-void updateHomeScreen(int t, int h) {
+void updateHomeScreen(int t, int h ) {
 lcd.clear();
 lcd.setCursor(1, 0); // adjust position
   lcd.print("TEMP:");
@@ -275,7 +292,7 @@ lcd.setCursor(1, 0); // adjust position
   lcd.print(avgBPM);
   lcd.setCursor(10,2);
   lcd.print("INF TEMP:");
-  if (ExternalBodyTemp < EXT[0] || ExternalBodyTemp > EXT[1]) {
+  if (rollingAvgTempC < EXT[0] || rollingAvgTempC > EXT[1]) {
     lcd.setCursor(9, 2); // adjust position
     lcd.print("*INF TEMP");} 
     lcd.setCursor(15, 3); // adjust position
@@ -283,7 +300,7 @@ lcd.setCursor(1, 0); // adjust position
     lcd.setCursor(16,3); // adjust position
     lcd.print("C");
   lcd.setCursor(10,3);
-  lcd.print(ExternalBodyTemp);
+  lcd.print(rollingAvgTempC);
   lcd.display();
 }
 //Updates the temperature screen plus displaying it
@@ -358,10 +375,11 @@ void deactivateWarning() {
   digitalWrite(22, LOW);
   noTone(buzzer);
 }
-void loop() {
+void loop() 
+{
     // Read data from MAX30105
   irValue = particleSensor.getIR();
-  ExternalBodyTemp = particleSensor.readTemperature(); // Body temperature in Celsius
+ // ExternalBodyTemp = particleSensor.readTemperature(); // Body temperature in Celsius
   // Check for a beat and calculate BPM
   if (checkForBeat(irValue) == true) {
     long deltaHeartBeat = millis() - lastBeat;
@@ -428,6 +446,11 @@ void loop() {
     }
   }
   // Print results
+  Serial.print(irValue);
+  Serial.print(", ");
+  Serial.print(upperThresholdAvg);
+  Serial.print(", ");
+  Serial.println(threshholdAvg);
   // Serial.print("Avg BPM Components: ");
   for (uint8_t i = 0; i < RATE_SIZE; i++) {
     // Serial.print(rates[i]);
@@ -437,7 +460,6 @@ void loop() {
   // Serial.print(avgBPM);
   // Serial.print(", ");
   // Serial.println(bpm);
-  delay(10); // Small delay for smoother output
   // calculate HR value
  // ExternalBodyTemp = particleSensor.readTemperature(); // get body temp in C
   // Print results to terminal
@@ -474,16 +496,6 @@ void loop() {
   // delay(1000);
   // Toggle heater enabled state every 30 seconds
   // An ~3.0 degC temperature increase can be noted when heater is enabled
-  if (loopCnt >= 30) {
-    enableHeater = !enableHeater;
-    sht31.heater(enableHeater);
-   // Serial.print("Heater Enabled State: ");
-    // if (sht31.isHeaterEnabled())
-      //Serial.println("ENABLED");
-    // else
-      //Serial.println("DISABLED");
-    loopCnt = 0;
-  }
   loopCnt++;
   // This is the calibration timer
   timer = millis() / 1000;
@@ -509,62 +521,101 @@ void loop() {
     ok = 1;
     updateBPMScreen();
   }
-  if (screen == HOME_SCREEN && ((millis() / 500) % 10 == 0)) {
-    updateHomeScreen(t, h);
-    //Serial.print("Hello");
-  } else if (screen == TEMPERATURE_SCREEN && ((millis() / 500) % 10 == 0)) {
-    updateTempScreen();
-  } else if (screen == HUMIDITY_SCREEN && ((millis() / 500) % 10 == 0)) {
-    updateHumidScreen();
-  } else if (screen == EXTTEMP_SCREEN && ((millis() / 500) % 10 == 0)) {
-    updateEXTTempScreen();
-  } else if (screen == BPM_SCREEN && ((millis() / 500) % 10 == 0)) {
-    updateBPMScreen();
-  }
+  // if (screen == HOME_SCREEN && ((millis() / 500) % 10 == 0)) {
+  //   updateHomeScreen(t, h);
+  //   //Serial.print("Hello");
+  // } else if (screen == TEMPERATURE_SCREEN && ((millis() / 500) % 10 == 0)) {
+  //   updateTempScreen();
+  // } else if (screen == HUMIDITY_SCREEN && ((millis() / 500) % 10 == 0)) {
+  //   updateHumidScreen();
+  // } else if (screen == EXTTEMP_SCREEN && ((millis() / 500) % 10 == 0)) {
+  //   updateEXTTempScreen();
+  // } else if (screen == BPM_SCREEN && ((millis() / 500) % 10 == 0)) {
+  //   updateBPMScreen();
+  // }
 
   // Check if the internal and external temperature and humidity are outside the allowed bounds
 
-  if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && ExternalBodyTemp > EXT[0] && ExternalBodyTemp < EXT[1] && avgBPM > AVGBPM[0] && avgBPM < AVGBPM[1])
-  {
-    deactivateWarning();
-  }
+  // if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && rollingAvgTempC > EXT[0] && rollingAvgTempC < EXT[1] && avgBPM > AVGBPM[0] && avgBPM < AVGBPM[1])
+  // {
+  //   deactivateWarning();
+  // }
 
-  else
-  {
-    activateWarning();
-    if (h<H[0] && oob == false)
-    {
-      digitalWrite(26,LOW); //Humidifier
-      delay(1000);
-      digitalWrite(26,HIGH);
-      delay(1000);
-      digitalWrite(26,LOW);
-      delay(1000);
-      digitalWrite(26,HIGH);
-      oob = true;
+  // else
+  // {
+  //   activateWarning();
+  //   if (h<H[0] && oob == false)
+  //   {
+  //     digitalWrite(26,LOW); //Humidifier
+  //     delay(1000);
+  //     digitalWrite(26,HIGH);
+  //     delay(1000);
+  //     digitalWrite(26,LOW);
+  //     delay(1000);
+  //     digitalWrite(26,HIGH);
+  //     oob = true;
+  //   }
+  //   else if (h>H[0] && oob == true)
+  //   {
+  //     digitalWrite(26,LOW);
+  //     delay(1000);
+  //     digitalWrite(26,HIGH);
+  //     oob = false;
+  //   }
+  //   if (t>T[1])
+  //   {
+  //     digitalWrite(24, HIGH); //fan
+  //   }
+  //   else
+  //   {
+  //     digitalWrite(24,LOW);
+  //   }
+  //   if (t<T[0])
+  //   {
+  //     digitalWrite(HEAT_PIN, 255); //heater
+  //   }
+  //   else
+  //   {
+  //     digitalWrite(HEAT_PIN,0);
+  //   }
+  // }
+   // Get the skin temperature and calculate estimated core temperature
+    float skinTempC = sts.getTemperaturePeriodC();
+    float coreTempC = skinTempC + 2.0;
+    // Store the core temperature in the array
+    coreTempReadings[currentIndex] = coreTempC;
+    currentIndex++;
+    // Reset index and mark array as filled once we reach the end
+    if (currentIndex >= numSamples) {
+        currentIndex = 0;
+        isArrayFilled = true;
     }
-    else if (h>H[0] && oob == true)
-    {
-      digitalWrite(26,LOW);
-      delay(1000);
-      digitalWrite(26,HIGH);
-      oob = false;
+    // Calculate the rolling average
+    float sum = 0.0;
+    int count1 = isArrayFilled ? numSamples : currentIndex; // Use only filled elements
+    for (int i = 0; i < count1; i++) {
+        sum += coreTempReadings[i];
     }
-    if (t>T[1])
-    {
-      digitalWrite(24, HIGH); //fan
-    }
-    else
-    {
-      digitalWrite(24,LOW);
-    }
-    if (t<T[0])
-    {
-      digitalWrite(HEAT_PIN, 255); //heater
-    }
-    else
-    {
-      digitalWrite(HEAT_PIN,0);
-    }
-  }
+    rollingAvgTempC = sum / count1;
+    float rollingAvgTempF = (rollingAvgTempC * 1.8) + 32;
+      // Serial.println(avgBPM);
+
+    // Print temperatures
+  //  Serial.print("Skin Temperature: ");
+  //  Serial.print(skinTempC);
+  //  Serial.print(" ℃ /n ");
+  //  Serial.print((skinTempC * 1.8) + 32);
+  //  Serial.println(" ℉");
+  //  Serial.print("Estimated Core Temperature: ");
+  //  Serial.print(coreTempC);
+  //  Serial.print(" ℃ / ");
+  //  Serial.print((coreTempC * 1.8) + 32);
+  //  Serial.println(" ℉");
+    //Serial.print("Rolling Average Core Temperature: ");
+    // Serial.println(rollingAvgTempC);
+   // Serial.print(" ℃  ");
+    // Serial.print(rollingAvgTempF);
+    // Serial.println("");
+    //Serial.println(" ℉");
+    // delay(500);
 }
