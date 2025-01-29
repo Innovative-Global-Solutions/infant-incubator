@@ -11,7 +11,7 @@ DFRobot_STS3X sts(&Wire, STS3X_I2C_ADDRESS_B);
 float coreTempReadings[numSamples]; // Array to store the last temperature readings
 int currentIndex = 0;  // Current index for storing the reading
 bool isArrayFilled = false;  // Flag to indicate when the array is fully populated
-#define HEAT_PIN 13
+#define HEAT_PIN 14
 #define BUTTON_HUMID_BUTTON 11 // Digital pin for humidity screen button
 #define HOME_SCREEN_BUTTON 8  // Digital pin for home screen
 
@@ -167,7 +167,6 @@ void setup() {
   pinMode(HEAT_PIN, OUTPUT);
   pinMode(26, OUTPUT); // Set pin 9 as an output
   pinMode(24, OUTPUT);
-  pinMode(HEAT_PIN, OUTPUT);
   digitalWrite(6, HIGH);
   // pinMode(6, OUTPUT);
   // digitalWrite(6, LOW);
@@ -207,7 +206,7 @@ void incrementScreen() {
 }
 //Updates the BPM screen
 void updateBPMScreen() {
- // lcd.clear();
+ lcd.clear();
   lcd.setCursor(1, 0); // adjust position
   lcd.print("BPM:");
     lcd.setCursor(10,0);
@@ -524,61 +523,61 @@ void loop()
   if (screen == HOME_SCREEN && ((millis() / 500) % 10 == 0)) {
     updateHomeScreen(t, h);
     //Serial.print("Hello");
-  } else if (screen == TEMPERATURE_SCREEN && ((millis() / 500) % 10 == 0)) {
+  } else if (screen == TEMPERATURE_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateTempScreen();
-  } else if (screen == HUMIDITY_SCREEN && ((millis() / 500) % 10 == 0)) {
+  } else if (screen == HUMIDITY_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateHumidScreen();
-  } else if (screen == EXTTEMP_SCREEN && ((millis() / 500) % 10 == 0)) {
+  } else if (screen == EXTTEMP_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateEXTTempScreen();
-  } else if (screen == BPM_SCREEN && ((millis() / 500) % 10 == 0)) {
+  } else if (screen == BPM_SCREEN && ((millis() / 100) % 10 == 0)) {
     updateBPMScreen();
   }
 
   // Check if the internal and external temperature and humidity are outside the allowed bounds
 
-  // if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && rollingAvgTempC > EXT[0] && rollingAvgTempC < EXT[1] && avgBPM > AVGBPM[0] && avgBPM < AVGBPM[1])
-  // {
-  //   deactivateWarning();
-  // }
+  if (t > T[0] && t < T[1] && h >H[0] && h<H[1] && rollingAvgTempC > EXT[0] && rollingAvgTempC < EXT[1] && avgBPM > AVGBPM[0] && avgBPM < AVGBPM[1])
+  {
+    deactivateWarning();
+  }
 
-  // else
-  // {
-  //   activateWarning();
-  //   if (h<H[0] && oob == false)
-  //   {
-  //     digitalWrite(26,LOW); //Humidifier
-  //     delay(1000);
-  //     digitalWrite(26,HIGH);
-  //     delay(1000);
-  //     digitalWrite(26,LOW);
-  //     delay(1000);
-  //     digitalWrite(26,HIGH);
-  //     oob = true;
-  //   }
-  //   else if (h>H[0] && oob == true)
-  //   {
-  //     digitalWrite(26,LOW);
-  //     delay(1000);
-  //     digitalWrite(26,HIGH);
-  //     oob = false;
-  //   }
-  //   if (t>T[1])
-  //   {
-  //     digitalWrite(24, HIGH); //fan
-  //   }
-  //   else
-  //   {
-  //     digitalWrite(24,LOW);
-  //   }
-  //   if (t<T[0])
-  //   {
-  //     digitalWrite(HEAT_PIN, 255); //heater
-  //   }
-  //   else
-  //   {
-  //     digitalWrite(HEAT_PIN,0);
-  //   }
-  // }
+  else
+  {
+    activateWarning();
+    if (h<H[0] && oob == false)
+    {
+      digitalWrite(26,LOW); //Humidifier
+      delay(1000);
+      digitalWrite(26,HIGH);
+      delay(1000);
+      digitalWrite(26,LOW);
+      delay(1000);
+      digitalWrite(26,HIGH);
+      oob = true;
+    }
+    else if (h>H[0] && oob == true)
+    {
+      digitalWrite(26,LOW);
+      delay(1000);
+      digitalWrite(26,HIGH);
+      oob = false;
+    }
+    if (t>T[1])
+    {
+      digitalWrite(24, HIGH); //fan
+    }
+    else
+    {
+      digitalWrite(24,LOW);
+    }
+    if (t<T[0])
+    {
+      digitalWrite(HEAT_PIN, 255); //heater
+    }
+    else
+    {
+      digitalWrite(HEAT_PIN,0);
+    }
+  }
    // Get the skin temperature and calculate estimated core temperature
     float skinTempC = 0;
     if ((millis()/100)%20 == 0){
