@@ -561,7 +561,7 @@ void loop()
       digitalWrite(26,HIGH);
       oob = false;
     }
-    if (t>T[1])
+    if (t>((T[1]-T[0])*.66+T[0]))
     {
       digitalWrite(24, HIGH); //fan
     }
@@ -569,7 +569,7 @@ void loop()
     {
       digitalWrite(24,LOW);
     }
-    if (t<T[0])
+    if (t<((T[1]-T[0])*.33+T[0]))
     {
       digitalWrite(HEAT_PIN, 255); //heater
     }
