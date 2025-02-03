@@ -80,8 +80,8 @@ float t;                     //The read temperature
 float h;                     //The read humidity
 float T[2] = { 20.0, 30.0 }; //initial temp bounds
 float H[2] = { 40.0, 60.0 }; //initial humid bounds
-float AVGBPM[2] = { 60.0, 120.0 };
-float EXT[2] = { 0.0, 200.0 };
+float AVGBPM[2] = { 60.0, 100.0 };
+float EXT[2] = { 15.0, 40.0 };
 float ok = 0;   //counter for ok button
 int screen = 0; //0 is home screen, 1 is temperature screen, 2 is humidity
 float lastScreenChange = 0;
@@ -561,7 +561,7 @@ void loop()
       digitalWrite(26,HIGH);
       oob = false;
     }
-    if (t>((T[1]-T[0])*.66+T[0]))
+    if (t>((T[1]-T[0])*.66+T[0]) || rollingAvgTempC > ((EXT[1]-EXT[0])*.66+EXT[0]))
     {
       digitalWrite(24, HIGH); //fan
     }
@@ -569,7 +569,7 @@ void loop()
     {
       digitalWrite(24,LOW);
     }
-    if (t<((T[1]-T[0])*.33+T[0]))
+    if (t<((T[1]-T[0])*.33+T[0]) || rollingAvgTempC < ((EXT[1]-EXT[0])*.33+EXT[0]))
     {
       digitalWrite(HEAT_PIN, 255); //heater
     }
