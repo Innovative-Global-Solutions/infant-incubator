@@ -445,11 +445,11 @@ void loop()
     }
   }
   // Print results
-  Serial.print(irValue);
-  Serial.print(", ");
-  Serial.print(upperThresholdAvg);
-  Serial.print(", ");
-  Serial.println(threshholdAvg);
+  // Serial.print(irValue);
+  // Serial.print(", ");
+  // Serial.print(upperThresholdAvg);
+  // Serial.print(", ");
+  // Serial.println(threshholdAvg);
   // Serial.print("Avg BPM Components: ");
   for (uint8_t i = 0; i < RATE_SIZE; i++) {
     // Serial.print(rates[i]);
