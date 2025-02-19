@@ -167,6 +167,7 @@ void setup() {
   pinMode(HEAT_PIN, OUTPUT);
   pinMode(26, OUTPUT); // Set pin 9 as an output
   pinMode(24, OUTPUT);
+  pinMode(29, OUTPUT);
   digitalWrite(6, HIGH);
   // pinMode(6, OUTPUT);
   // digitalWrite(6, LOW);
@@ -577,7 +578,22 @@ void loop()
     {
       digitalWrite(HEAT_PIN,0);
     }
-  }
+    // if (h>((H[1]-H[0])*.66+H[0]))
+    // {
+    //   digitalWrite(27, 255); //humidifier
+    // }
+    // else
+    // {
+    //   digitalWrite(27,LOW);
+    // }
+    if (h<((H[1]-H[0])*.33+H[0]))
+    {
+      digitalWrite(29, HIGH); //humidifier
+    }
+    else
+    {
+      digitalWrite(29,LOW);
+    }
    // Get the skin temperature and calculate estimated core temperature
     float skinTempC = 0;
     if ((millis()/100)%20 == 0){
@@ -620,5 +636,6 @@ void loop()
     // Serial.print(rollingAvgTempF);
     // Serial.println("");
     //Serial.println(" ℉");
-    // delay(500);
+    }// delay(500);
 }
+
