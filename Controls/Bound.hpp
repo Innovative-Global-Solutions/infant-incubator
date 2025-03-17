@@ -14,11 +14,12 @@
 class Bound{
   
   public:
-    //upper bound
-    double upperBound;
-
     //lower bound
-    double lowerBound;
+    double lowerBound = 0;
+    //upper bound
+    double upperBound = 0;
+
+
 
     //soft offset triggers as indicated by proportion. Allows for asymmetric
     double offsetProportion[2] = {0,1};

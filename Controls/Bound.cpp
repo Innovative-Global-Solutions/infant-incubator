@@ -3,8 +3,10 @@
 * Innovative Global Solutions - IGS
 * Infant Incubator Project
 * 
-* Abstract class for bound
+* class for bound
 */
+
+//TODO: add capablility of polling function get status
 
 #include "Bound.hpp"
 
@@ -17,9 +19,9 @@ Bound::Bound(double lowerBound, double upperBound, double offset[2]):
     offsetProportion[1] = offset[1];
   }
 
-Bound::setLowerBound(double bound) {lowerBound = bound;}
-Bound::setUpperBound(double bound) {upperBound = bound;}
-Bound::setOffset(double offset[2]){
+void Bound::setLowerBound(double bound) {lowerBound = bound;}
+void Bound::setUpperBound(double bound) {upperBound = bound;}
+void Bound::setOffset(double offset[2]){
   offsetProportion[0] = offset[0];
   offsetProportion[1] = offset[1];
 }
@@ -27,11 +29,11 @@ Bound::setOffset(double offset[2]){
 int Bound::getStatus(double currentVal) {
     if (currentVal < lowerBound)
       return -2;
-    else if (currentVal < lowerBound + (upperBound - lowerBound)*offsetProportion[0])
+    else if (currentVal < (lowerBound + (upperBound - lowerBound)*offsetProportion[0]))
       return -1;
     else if (currentVal > upperBound)
       return 2;
-    else if (currentVal > lowerBound + (upperBound - lowerBound)*offsetProportion[0])
+    else if (currentVal > (lowerBound + (upperBound - lowerBound)*offsetProportion[1]))
       return 1;
     else
       return 0;
