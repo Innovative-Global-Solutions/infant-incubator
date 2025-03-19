@@ -83,11 +83,11 @@ typedef enum{
   EXTTEMP_SCREEN
 } screen;
 
-const int HOME_SCREEN = 0;
-const int HUMIDITY_SCREEN = 1;
-const int TEMPERATURE_SCREEN = 2;
-const int BPM_SCREEN = 3;
-const int EXTTEMP_SCREEN = 4;
+// const int HOME_SCREEN = 0;
+// const int HUMIDITY_SCREEN = 1;
+// const int TEMPERATURE_SCREEN = 2;
+// const int BPM_SCREEN = 3;
+// const int EXTTEMP_SCREEN = 4;
 // below are the switch states for the bounds screen they help determine state of the button (high or low) to determine if screenswitching is necessary.
 int humidSwitchState = 0;
 int homeSwitchState = 0;
@@ -113,7 +113,7 @@ Bound InfBPMBound = Bound(60, 100);
 Bound InfExtTempBound = Bound(15, 40, softBoundArray);
 
 float ok = 0;    //counter for ok button
-screen currentScreen = 0;  //0 is home screen, 1 is temperature screen, 2 is humidity
+screen currentScreen = HOME_SCREEN;  //0 is home screen, 1 is temperature screen, 2 is humidity
 float lastScreenChange = 0;
 float lastIncrement = 0;
 // float ExternalBodyTemp;     // External body temperature
@@ -131,25 +131,25 @@ void doEncoder() {
     prevstate = state;
   }
   if (millis() - lastIncrement > 500) {
-    if (screen == TEMPERATURE_SCREEN) {
+    if (currentScreen == TEMPERATURE_SCREEN) {
       if (ok == 1) {
         TempBound.lowerBound += EncoderPos;
       } else if (ok == 2) {
         TempBound.upperBound += EncoderPos;
       }
-    } else if (screen == HUMIDITY_SCREEN) {
+    } else if (currentScreen == HUMIDITY_SCREEN) {
       if (ok == 1) {
         HumidBound.lowerBound += EncoderPos;
       } else if (ok == 2) {
         HumidBound.upperBound += EncoderPos;
       }
-    } else if (screen == BPM_SCREEN) {
+    } else if (currentScreen == BPM_SCREEN) {
       if (ok == 1) {
         InfBPMBound.lowerBound += EncoderPos;
       } else if (ok == 2) {
         InfBPMBound.upperBound += EncoderPos;
       }
-    } else if (screen == EXTTEMP_SCREEN) {
+    } else if (currentScreen == EXTTEMP_SCREEN) {
       if (ok == 1) {
         InfExtTempBound.lowerBound += EncoderPos;
       } else if (ok == 2) {
@@ -173,9 +173,8 @@ void setup() {
   if (particleSensor.begin(Wire, I2C_SPEED_FAST) == false)  //Use default I2C port, 400kHz speed
   {
     // Serial.println("MAX30105 was not found.");
-    while (1)
-      ;
-  }
+    while (1);
+  } 
   particleSensor.setup();                     //Configure sensor with default settings
   particleSensor.setPulseAmplitudeRed(0x0A);  //Turn off Red LED
   particleSensor.setPulseAmplitudeGreen(0);   //Turn off Green LED
