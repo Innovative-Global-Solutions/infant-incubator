@@ -24,8 +24,8 @@ bool isArrayFilled = false;  // Flag to indicate when the array is fully populat
 MAX30105 particleSensor;
 //#define BUTTON_OK 37 hello
 LCD_I2C lcd = LCD_I2C(0x27, 20, 4); // Default address of most PCF8574 modules, change according
-                           // 1.54" 200x200 Tricolor EPD with SSD1681 chipset
-                           // ThinkInk_154_Tricolor_Z90 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
+                                    // 1.54" 200x200 Tricolor EPD with SSD1681 chipset
+                                    // ThinkInk_154_Tricolor_Z90 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY);
 
 const uint8_t RATE_SIZE = 4;     // Number of HR samples to average
 uint8_t rates[RATE_SIZE];         // Array of heart rates
@@ -53,7 +53,7 @@ float bpm = 0.0;                   // Calculated BPM
 
 bool enableHeater = false;
 uint8_t loopCnt = 0;
-Adafruit_SHT31 sht31 = Adafruit_SHT31();
+// Adafruit_SHT31 sht31 = Adafruit_SHT31();
 unsigned long timer = 0;
 const int buzzer = 7; //buzzer to arduino pin 9
 const int HOME_SCREEN = 0;
@@ -130,10 +130,12 @@ void doEncoder() {
   }
 }
 void setup() {
+  Serial.print("HELLO MY NAME IS");
    while(sts.begin() != true){
-       // Serial.println("Failed to init chip, please check if the chip connection is fine.");
+       Serial.println("Failed to init chip, please check if the chip connection is fine.");
         delay(1000);
     }
+
    // Serial.println("Begin ok!");
     sts.setFreq(sts.e10Hz);
     // Initialize the array with zeros
@@ -186,10 +188,10 @@ void setup() {
   lcd.display();
   lcd.backlight();
   // Serial.println("SHT31 test");
-  if (!sht31.begin(0x44)) { // Set to 0x45 for alternate i2c addr
-    // Serial.println("Couldn't find SHT31");
-    while (1) delay(1);
-  }
+  // if (!sht31.begin(0x44)) { // Set to 0x45 for alternate i2c addr
+  //   // Serial.println("Couldn't find SHT31");
+  //   while (1) delay(1);
+  // }
   // Serial.print("Heater Enabled State: ");
   // if (sht31.isHeaterEnabled())
     // Serial.println("ENABLED");
@@ -470,8 +472,10 @@ void loop()
   // Serial.print(", Avg BPM=");
   // Serial.print(avgBPM);
   //This reads data from the sensor
-  t = sht31.readTemperature();
-  h = sht31.readHumidity();
+  // t = sht31.readTemperature();
+  // h = sht31.readHumidity();
+  t = 90;
+  h = 40;
   // helps determine if the buttons are being pressed or not
   humidSwitchState = digitalRead(BUTTON_HUMID_BUTTON);
   homeSwitchState = digitalRead(HOME_SCREEN_BUTTON);
