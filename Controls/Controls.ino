@@ -474,8 +474,8 @@ void loop()
   //This reads data from the sensor
   // t = sht31.readTemperature();
   // h = sht31.readHumidity();
-  t = 90;
-  h = 40;
+  t = 12.5 * sin(millis() * 2 * PI / 60000) + 27.5;
+  h = 10 * sin(millis() * 2 * PI / 60000) + 50;
   // helps determine if the buttons are being pressed or not
   humidSwitchState = digitalRead(BUTTON_HUMID_BUTTON);
   homeSwitchState = digitalRead(HOME_SCREEN_BUTTON);
